@@ -3,8 +3,7 @@
 #define OPINF_DDTOP_H
 
 #include <exception>
-
-#include "CudaGpuMatrix.h"
+#include "cuda_gpu_matrix.h"
 #include "utilities.h"
 
 class ddt_kernel_error : public std::runtime_error
