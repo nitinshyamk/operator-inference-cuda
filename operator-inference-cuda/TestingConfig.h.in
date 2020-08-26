@@ -1,0 +1,2 @@
+#pragma once
+#define SOURCE_CODE_DIR "@CMAKE_SOURCE_DIR@"

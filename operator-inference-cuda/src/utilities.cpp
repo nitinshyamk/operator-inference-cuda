@@ -1,4 +1,4 @@
-#include "utilities.h"
+#include "../include/utilities.h"
 
 void print_mat(const double* arr, int M, int N)
 {

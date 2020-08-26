@@ -2,12 +2,12 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
-#include "cuda_host_matrix.h"
-#include "cuda_gpu_matrix.h"
-#include "cuda_libraries.h"
-#include "ddt.cuh"
-#include "gpu_timer.h"
-#include "linear_algebra.cuh"
+#include "../include/cuda_host_matrix.h"
+#include "../include/cuda_gpu_matrix.h"
+#include "../include/cuda_libraries.h"
+#include "../include/ddt.cuh"
+#include "../include/gpu_timer.h"
+#include "../include/linear_algebra.cuh"
 
 #include <stdio.h>
 #include <iostream>
@@ -50,10 +50,10 @@ int main()
     timer.start();
     cuda_host_matrix A(10, 10, cuda_host_matrix::MatrixType::CM_DENSE);
     for (int r = 0; r < 10 * 10; ++r)
-        A.data.get()[r] = r/ 10.0;
+        A.c_ptr()[r] = r/ 10.0;
 
     cuda_gpu_matrix Agpu(10, 10);
-    A.copyToGpuMemory(Agpu);
+    A.copy_to_gpu_memory(Agpu);
 
     timer.stop();
     timer.elapsed();
@@ -66,7 +66,7 @@ int main()
     timer.stop();
     timer.elapsed();
 
-    C.copyFromGpuMemory(Cgpu);
+    C.copy_to_host_memory(Cgpu);
 
     A.print();
     C.print();

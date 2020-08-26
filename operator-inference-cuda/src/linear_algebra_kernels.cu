@@ -1,4 +1,4 @@
-#include "linear_algebra_kernels.cuh"
+#include "../include/linear_algebra_kernels.cuh"
 
 __global__ void transpose_kernel(double* src, double* dest, size_t src_M, size_t src_N)
 {

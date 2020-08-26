@@ -1,4 +1,18 @@
-#include "linear_algebra.cuh"
+#include "../include/linear_algebra.cuh"
+
+cuda_host_matrix create_host_matrix_from_gpu(cuda_gpu_matrix& A)
+{
+	cuda_host_matrix ans(A.M(), A.N());
+	ans.copy_to_host_memory(A);
+	return ans;
+};
+
+cuda_gpu_matrix create_gpu_matrix_from_host(cuda_host_matrix& A)
+{
+	cuda_gpu_matrix ans(A.M(), A.N());
+	A.copy_to_gpu_memory(ans);
+	return ans;
+};
 
 cuda_gpu_matrix
 linear_algebra::multiply(
@@ -262,26 +276,23 @@ linear_algebra::subset(
 	
 	cuda_gpu_matrix ans(B_M, B_N);
 
-	double* src = A.c_ptr(), *dest = ans.c_ptr();
-
-
 	// if the row range is the same, a single contiguous block
 	// otherwise we need to copy in chunks
 
-	if (B_M = A.M())
+	if (B_M == A.M())
 	{
 		size_t start_dest = columnMajorZeroIndex(0, colrange.first, A.M(), A.N());
 		checkCudaError<cuda_memory_error>(
-			cudaMemcpy(dest, src + start_dest, A.M() * B_N * sizeof(*(src)), cudaMemcpyDeviceToDevice));
+			cudaMemcpy(ans.c_ptr(), A.c_ptr() + start_dest, A.M() * B_N * sizeof(*(A.c_ptr())), cudaMemcpyDeviceToDevice));
 		return ans;
 	}
 
 	for (size_t start_col = 0; start_col < B_N; ++start_col)
 	{
-		double* start_dest = dest + columnMajorZeroIndex(rowrange.first, start_col + colrange.first, A.M(), A.N());
-		double* start_src = src + columnMajorZeroIndex(0, start_col, ans.M(), ans.N());
+		double* start_src = A.c_ptr() + columnMajorZeroIndex(rowrange.first, start_col + colrange.first, A.M(), A.N());
+		double* start_dest = ans.c_ptr() + columnMajorZeroIndex(0, start_col, ans.M(), ans.N());
 		checkCudaError<cuda_memory_error>(
-			cudaMemcpy(start_dest, start_src, ans.M() * sizeof(*(src)), cudaMemcpyDeviceToDevice));
+			cudaMemcpy(start_dest, start_src, ans.M() * sizeof(double), cudaMemcpyDeviceToDevice));
 	}
 	return ans;
 }
@@ -290,6 +301,8 @@ cuda_gpu_matrix
 linear_algebra::transpose(const cuda_gpu_matrix& A) const
 {
 	cuda_gpu_matrix ans = A.deep_copy();
+	using std::swap;
+	swap(ans._m, ans._n);
 
 	size_t block1Dim = 1 << 5;
 	dim3 gridDim((A.M() + block1Dim - 1) / block1Dim, (A.N() + block1Dim - 1) / block1Dim);
@@ -378,9 +391,8 @@ linear_algebra::tikhonov(const cuda_gpu_matrix& A, const cuda_gpu_matrix& b, dou
 	{
 		identity_host[i][i] = sqrt(k);
 	}
-	cuda_gpu_matrix identity(A.N(), A.N());
-	identity_host.copyToGpuMemory(identity);
 
+	cuda_gpu_matrix identity = create_gpu_matrix_from_host(identity_host);
 	auto Aplus = concatenate(A, identity, true);
 	auto bplus = concatenate(b, zeromat, true);
 

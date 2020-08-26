@@ -54,7 +54,7 @@ bool checkCudaError(cudaError_t err)
 
 inline __device__ __host__ size_t columnMajorZeroIndex(size_t row, size_t col, size_t M, size_t N)
 {
-	return col * N + row;
+	return col * M + row;
 };
 
 

@@ -9,6 +9,7 @@
 
 class cuda_gpu_matrix
 {
+	friend class linear_algebra;
 public:
 	cuda_gpu_matrix() : _m(0), _n(0), gpuPtr() {}
 
@@ -26,6 +27,8 @@ public:
 		this->gpuPtr = matrix.gpuPtr;
 		return *this;
 	}
+
+
 
 	cuda_gpu_matrix deep_copy() const
 	{

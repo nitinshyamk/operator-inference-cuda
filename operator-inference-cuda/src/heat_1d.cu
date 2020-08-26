@@ -1,4 +1,4 @@
-#include "heat_1d.cuh"
+#include "../include/heat_1d.cuh"
 
 Heat1D::Heat1D(linear_algebra& linalg, OperatorInference<BackwardEuler, false>& opinf) : linalg(linalg), operatorInference(opinf)
 {
@@ -23,15 +23,15 @@ Heat1D::get_heat_matrix_operators(size_t N, double dx, double mu)
 	A[N - 1][N - 1] = -2.0;
 	A[N - 2][N - 1] = 1.0;
 
-	cuda_gpu_matrix Agpu(A.N, A.N);
-	A.copyToGpuMemory(Agpu);
+	cuda_gpu_matrix Agpu(A.N(), A.N());
+	A.copy_to_gpu_memory(Agpu);
 
-	cuda_host_vector B(A.N);
+	cuda_host_vector B(A.N());
 	B[0] = alpha;
 	B[N - 1] = alpha;
 
-	cuda_gpu_vector Bgpu(A.N);
-	B.copyToGpuMemory(Bgpu);
+	cuda_gpu_vector Bgpu(A.N());
+	B.copy_to_gpu_memory(Bgpu);
 
 
 
@@ -48,16 +48,13 @@ Heat1D::backward_euler(
 	double dt)
 {
 	// Configure operator (apply pinverse on A with modded diagonal)
-	cuda_host_matrix A_host_op(A.M(), A.N());
-	A_host_op.copyFromGpuMemory(A);
+	cuda_host_matrix A_host_op = create_host_matrix_from_gpu(A);
 	for (size_t i = 0; i < A.N(); ++i)
 	{
 		A_host_op[i][i] -= 1.0 / dt;
 	}
 	
-	cuda_gpu_matrix Aop_partial(A.M(), A.N());
-	A_host_op.copyToGpuMemory(Aop_partial);
-
+	cuda_gpu_matrix Aop_partial = create_gpu_matrix_from_host(A_host_op);
 	cuda_gpu_matrix Aop = linalg.pinv(Aop_partial);
 
 

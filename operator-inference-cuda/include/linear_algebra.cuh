@@ -15,6 +15,10 @@
 #include "linear_algebra_kernels.cuh"
 #include "utilities.h"
 
+// simple utilities to make transfer from one memory location to another simpler
+cuda_host_matrix create_host_matrix_from_gpu(cuda_gpu_matrix& A);
+cuda_gpu_matrix create_gpu_matrix_from_host(cuda_host_matrix& A);
+
 /// <summary>
 /// Decomposition of an M x N matrix A
 /// </summary>

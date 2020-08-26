@@ -41,8 +41,6 @@ public:
 		checkCudaStatus<library_load_error>(cublasLtCreate(&blaslt_handle));
 		checkCudaStatus<library_load_error>(cusparseCreate(&sparse_handle));
 		checkCudaStatus<library_load_error>(cusolverDnCreate(&solver_handle));
-
-		std::cout << "Loaded CUDA libraries successfully." << std::endl;
 	}
 
 	~cuda_libraries()
@@ -51,7 +49,6 @@ public:
 		checkCudaStatus<library_load_error>(cublasLtDestroy(blaslt_handle));
 		checkCudaStatus<library_load_error>(cusparseDestroy(sparse_handle));
 		checkCudaStatus<library_load_error>(cusolverDnDestroy(solver_handle));
-		std::cout << "Closed connections to CUDA libraries." << std::endl;
 	}
 
 	cuda_libraries(const cuda_libraries& cpy) = delete;
