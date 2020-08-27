@@ -19,7 +19,7 @@ public:
 		this->matrix1 = getCudaHostMatrix1();
 		this->matrix2 = getCudaHostMatrix2();
 		this->matrix3 = getCudaHostMatrix3();
-
+		this->matrix4 = getCudaHostMatrix4();
 	}
 
 	virtual void TearDown() {}
@@ -55,12 +55,24 @@ public:
 	cuda_host_matrix getCudaHostMatrix3()
 	{
 		cuda_host_matrix ans(50, 5);
-		long ind = 0;
 		for (size_t r = 0; r < ans.M(); ++r)
 		{
 			for (size_t c = 0; c < ans.N(); ++c)
 			{
 				ans[r][c] = (double)c + 1.0;
+			}
+		}
+		return ans;
+	}
+
+	cuda_host_matrix getCudaHostMatrix4()
+	{
+		cuda_host_matrix ans(40, 4);
+		for (size_t r = 0; r < ans.M(); ++r)
+		{
+			for (size_t c = 0; c < ans.N(); ++c)
+			{
+				ans[r][c] = (double)r + 1.0;
 			}
 		}
 		return ans;
@@ -92,6 +104,7 @@ public:
 	cuda_host_matrix matrix1;
 	cuda_host_matrix matrix2;
 	cuda_host_matrix matrix3;
+	cuda_host_matrix matrix4;
 
 	cuda_libraries _cudaLibraries;
 	linear_algebra _linalg;
@@ -265,4 +278,24 @@ TEST_F(linear_algebra_test, get_matrix_squared)
 	ASSERT_TRUE(test_utilities::check_baseline(create_host_matrix_from_gpu(subsetsq), base_fname + "_3.txt"));
 }
 
+TEST_F(linear_algebra_test, concatenate)
+{
+	cuda_gpu_matrix matrix3gpu = create_gpu_matrix_from_host(matrix3);
+	auto m3concat = _linalg.concatenate(matrix3gpu, matrix3gpu, false);
+	auto ans = create_host_matrix_from_gpu(m3concat);
+
+	std::string base_fname = test_utilities::get_baselines_directory() + "/" + ::testing::UnitTest::GetInstance()->current_test_info()->name();
+	ASSERT_TRUE(test_utilities::check_baseline(ans, base_fname + "_1.txt"));
+
+	auto m4gpu = create_gpu_matrix_from_host(matrix4);
+	auto ans2 = create_host_matrix_from_gpu(_linalg.concatenate(m4gpu, m4gpu, true));
+	ASSERT_TRUE(test_utilities::check_baseline(ans2, base_fname + "_2.txt"));
+
+	cuda_gpu_vector allones = _linalg.get_ones(500);
+	auto allonesconcat = create_host_matrix_from_gpu(_linalg.concatenate(allones, allones, true));
+	ASSERT_TRUE(test_utilities::check_baseline(allonesconcat, base_fname + "_3.txt"));
+
+	auto stackright = create_host_matrix_from_gpu(_linalg.concatenate(allones, allones, false));
+	ASSERT_TRUE(test_utilities::check_baseline(stackright, base_fname + "_4.txt"));
+}
 
