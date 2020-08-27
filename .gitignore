@@ -1,3 +1,4 @@
 operator-inference-cuda/.vs/
 **/.vs/
 **/out/
+extern/**

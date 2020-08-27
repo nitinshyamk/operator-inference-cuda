@@ -78,7 +78,7 @@ public:
 		cuda_gpu_matrix scaling;
 		if (shouldScaleData)
 		{
-			scaling = linalg.find_column_maxes(D);
+			scaling = linalg.find_column_abs_maxes(D);
 			linalg.column_normalize(D, scaling);
 		}
 

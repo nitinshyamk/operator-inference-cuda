@@ -299,3 +299,32 @@ TEST_F(linear_algebra_test, concatenate)
 	ASSERT_TRUE(test_utilities::check_baseline(stackright, base_fname + "_4.txt"));
 }
 
+TEST_F(linear_algebra_test, find_column_maxes)
+{
+	auto m4gpu = create_gpu_matrix_from_host(matrix4);
+	auto m4maxes = _linalg.find_column_abs_maxes(m4gpu);
+	auto m4maxans = create_host_matrix_from_gpu(m4maxes);
+
+	std::string base_fname = test_utilities::get_baselines_directory() + "/" + ::testing::UnitTest::GetInstance()->current_test_info()->name();
+	ASSERT_TRUE(test_utilities::check_baseline(m4maxans, base_fname + "_1.txt"));
+
+
+	auto m3maxans = create_host_matrix_from_gpu(_linalg.find_column_abs_maxes(create_gpu_matrix_from_host(matrix3)));
+	ASSERT_TRUE(test_utilities::check_baseline(m3maxans, base_fname + "_2.txt"));
+}
+
+TEST_F(linear_algebra_test, column_normalize)
+{
+	auto m4gpu = create_gpu_matrix_from_host(matrix4);
+	auto m4maxes = _linalg.find_column_abs_maxes(m4gpu);
+	_linalg.column_normalize(m4gpu, m4maxes);
+	auto m4host = create_host_matrix_from_gpu(m4gpu);
+
+	std::string base_fname = test_utilities::get_baselines_directory() + "/" + ::testing::UnitTest::GetInstance()->current_test_info()->name();
+	ASSERT_TRUE(test_utilities::check_baseline(m4host, base_fname + "_1.txt"));
+
+	auto m3gpu = create_gpu_matrix_from_host(matrix3);
+	auto m3maxes = _linalg.find_column_abs_maxes(m3gpu);
+	_linalg.column_normalize(m3gpu, m3maxes);
+	ASSERT_TRUE(test_utilities::check_baseline(create_host_matrix_from_gpu(m3gpu), base_fname + "_2.txt"));
+}

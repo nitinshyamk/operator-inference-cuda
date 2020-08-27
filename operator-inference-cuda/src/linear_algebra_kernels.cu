@@ -12,20 +12,20 @@ __global__ void transpose_kernel(double* src, double* dest, size_t src_M, size_t
 	}
 };
 
-__global__ void find_column_maxes_kernel(double* src, double* dest, size_t src_M, size_t src_N)
+__global__ void find_column_abs_maxes_kernel(double* src, double* dest, size_t src_M, size_t src_N)
 {
 	int c = blockIdx.x * blockDim.x + threadIdx.x;
 	if (c < src_N)
 	{
-		double* cell = dest + columnMajorZeroIndex(0, c, 1, src_N);
-		*cell = -DBL_MAX;
-		for (size_t r = 0; r < src_M; ++src_M)
+		size_t dest_ind = columnMajorZeroIndex(0, c, 1, src_N);
+		dest[dest_ind] = 1.0;
+		for (size_t r = 0; r < src_M; ++r)
 		{
-			double* src_val = src + columnMajorZeroIndex(r, c, src_M, src_N);
-			*cell = fmax(fabs(*src_val), fabs(*cell));
+			size_t src_ind = columnMajorZeroIndex(r, c, src_M, src_N);
+			dest[dest_ind] = fmax(fabs(src[src_ind]), fabs(dest[dest_ind]));
 		}
 	}
-}
+};
 
 __global__ void column_normalize_kernel(double* matrix, double* scaling, size_t mat_M, size_t mat_N)
 {
@@ -37,7 +37,7 @@ __global__ void column_normalize_kernel(double* matrix, double* scaling, size_t 
 		auto scale_ind = columnMajorZeroIndex(0, c, 1, mat_N);
 		matrix[mat_ind] = matrix[mat_ind] / scaling[scale_ind];
 	}
-}
+};
 
 
 __global__ void set_ones_kernel(double* src, size_t N)
@@ -47,7 +47,7 @@ __global__ void set_ones_kernel(double* src, size_t N)
 	{
 		src[c] = 1.0;
 	}
-}
+};
 
 
 // __host__ added for testing
@@ -70,7 +70,7 @@ __device__ __host__ size_t lookup_ind(size_t* src, size_t sz, size_t lookup_ind)
 		}
 	}
 	return end;
-}
+};
 
 __global__ void get_matrix_squared_kernel(double* matrix, size_t M, size_t N, double* matrix_squared, size_t* lookup)
 {
@@ -88,11 +88,11 @@ __global__ void get_matrix_squared_kernel(double* matrix, size_t M, size_t N, do
 
 		matrix_squared[mat_sq_ind] = matrix[primary_ind] * matrix[secondary_ind];
 	}
-}
+};
 
-__global__ void invert_rectangular_diagonal_kernel(double* matrix, size_t M, size_t N)
+__global__ void invert_rectangular_diagonal_kernel(double* matrix, size_t M, size_t N, double epsilon)
 {
 	int r = blockIdx.x * blockDim.x + threadIdx.x;
 	double* cell = matrix + columnMajorZeroIndex(r, r, M, N);
 	*cell = 1.0 / *cell;
-}
+};

@@ -247,7 +247,7 @@ linear_algebra::pinv(const svd& decomposition) const
 	size_t blockDim = 1 << 6;
 	size_t gridDim = (diag_length + blockDim - 1) / blockDim;
 	
-	invert_rectangular_diagonal_kernel KERNEL_ARGS2(gridDim, blockDim) (pinvSigma.c_ptr(), pinvSigma.M(), pinvSigma.N());
+	invert_rectangular_diagonal_kernel KERNEL_ARGS2(gridDim, blockDim) (pinvSigma.c_ptr(), pinvSigma.M(), pinvSigma.N(), std::numeric_limits<double>::epsilon());
 	checkCudaError<cublas_matrix_operation_error>(cudaGetLastError());
 	checkCudaError<cublas_matrix_operation_error>(cudaDeviceSynchronize());
 
@@ -316,13 +316,13 @@ linear_algebra::transpose(const cuda_gpu_matrix& A) const
 }
 
 cuda_gpu_matrix
-linear_algebra::find_column_maxes(const cuda_gpu_matrix& A) const
+linear_algebra::find_column_abs_maxes(const cuda_gpu_matrix& A) const
 {
 	cuda_gpu_matrix scaling(1, A.N());
 	size_t blockDim = 1 << 5;
 	size_t gridDim = (A.N() + blockDim - 1) / blockDim;
 
-	find_column_maxes_kernel KERNEL_ARGS2(gridDim, blockDim) (A.c_ptr(), scaling.c_ptr(), A.M(), A.N());
+	find_column_abs_maxes_kernel KERNEL_ARGS2(gridDim, blockDim) (A.c_ptr(), scaling.c_ptr(), A.M(), A.N());
 
 	checkCudaError<cublas_matrix_operation_error>(cudaGetLastError());
 	checkCudaError<cublas_matrix_operation_error>(cudaDeviceSynchronize());
@@ -339,7 +339,8 @@ linear_algebra::column_normalize(cuda_gpu_matrix& A, const cuda_gpu_matrix& scal
 	size_t blockDim1 = 1 << 5;
 	auto getGridDim = [blockDim1](size_t r) -> size_t { return (r + blockDim1 - 1) / blockDim1; };
 	dim3 blockDim(blockDim1, blockDim1);
-	dim3 gridDim = (getGridDim(A.M()), getGridDim(A.N()));
+	dim3 gridDim(getGridDim(A.M()), getGridDim(A.N()));
+
 	column_normalize_kernel KERNEL_ARGS2(gridDim, blockDim) (A.c_ptr(), scaling.c_ptr(), A.M(), A.N());
 	checkCudaError<cublas_matrix_operation_error>(cudaGetLastError());
 	checkCudaError<cublas_matrix_operation_error>(cudaDeviceSynchronize());

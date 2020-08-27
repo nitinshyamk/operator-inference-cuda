@@ -157,7 +157,7 @@ public:
 	/// </summary>
 	/// <param name="A"></param>
 	/// <returns></returns>
-	cuda_gpu_matrix find_column_maxes(const cuda_gpu_matrix& A) const;
+	cuda_gpu_matrix find_column_abs_maxes(const cuda_gpu_matrix& A) const;
 
 	/// <summary>
 	/// Normalizes each column of the matrix A to fall within the range [-1, 1] and returns 

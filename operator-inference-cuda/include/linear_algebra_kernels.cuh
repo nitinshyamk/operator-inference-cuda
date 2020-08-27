@@ -8,7 +8,7 @@
 
 __global__ void transpose_kernel(double* src, double* dest, size_t src_M, size_t src_N);
 
-__global__ void find_column_maxes_kernel(double* src, double* dest, size_t src_M, size_t src_N);
+__global__ void find_column_abs_maxes_kernel(double* src, double* dest, size_t src_M, size_t src_N);
 
 __global__ void column_normalize_kernel(double* matrix, double* scaling, size_t mat_M, size_t mat_N);
 
@@ -18,6 +18,6 @@ __device__ size_t lookup_ind(size_t* src, size_t sz, size_t lookup_ind);
 
 __global__ void get_matrix_squared_kernel(double* matrix, size_t M, size_t N, double* matrix_squared, size_t* lookup);
 
-__global__ void invert_rectangular_diagonal_kernel(double* matrix, size_t M, size_t N);
+__global__ void invert_rectangular_diagonal_kernel(double* matrix, size_t M, size_t N, double epsilon);
 
 #endif OPINF_LINALG_KERNELS
