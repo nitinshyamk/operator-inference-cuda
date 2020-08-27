@@ -49,25 +49,27 @@ __global__ void set_ones_kernel(double* src, size_t N)
 	}
 }
 
-__device__ size_t lookup_ind(size_t* src, size_t sz, size_t lookup_ind)
+
+// __host__ added for testing
+__device__ __host__ size_t lookup_ind(size_t* src, size_t sz, size_t lookup_ind)
 {
 	size_t start = 0, end = sz - 1;
-	while (start < end - 1)
+	while (start < end)
 	{
 		size_t mid = (start + end) / 2;
 		if (src[mid] < lookup_ind)
 		{
-			end = mid;
+			start = mid + 1;
 		}
 		else if (src[mid] > lookup_ind)
 		{
-			start = mid;
+			end = mid;
 		}
 		else {
 			return mid;
 		}
 	}
-	return start;
+	return end;
 }
 
 __global__ void get_matrix_squared_kernel(double* matrix, size_t M, size_t N, double* matrix_squared, size_t* lookup)
@@ -77,9 +79,8 @@ __global__ void get_matrix_squared_kernel(double* matrix, size_t M, size_t N, do
 	int width = (N * N + N) / 2;
 	if (r < M && c < width)
 	{
-		size_t right_col_ind = width - 1 - c;
-		size_t primary_col_ind = lookup_ind(lookup, N, right_col_ind);
-		size_t secondary_col_ind = lookup[primary_col_ind] - right_col_ind;
+		size_t primary_col_ind = lookup_ind(lookup, N, c);
+		size_t secondary_col_ind = c - (primary_col_ind == 0 ? 0 : lookup[primary_col_ind - 1] + 1) + primary_col_ind;
 
 		size_t mat_sq_ind = columnMajorZeroIndex(r, c, M, width),
 			primary_ind = columnMajorZeroIndex(r, primary_col_ind, M, N),

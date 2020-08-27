@@ -362,24 +362,43 @@ linear_algebra::get_matrix_squared(const cuda_gpu_matrix& A) const
 {
 	size_t width = A.N() * (A.N() + 1) / 2;
 	cuda_gpu_matrix ans(A.M(), width);
-
-	std::shared_ptr<size_t> lookup_tbl(new size_t[A.N()], std::default_delete<size_t[]>());
-	for (size_t i = 1; i <= A.N(); ++i)
-	{
-		lookup_tbl.get()[i - 1] = (i * i + i) / 2 - 1;
-	}
+	std::shared_ptr<size_t> lookup_table = get_lookup_table(A.N());
 
 	size_t block1Dim = 1 << 5;
 	dim3 gridDim((A.M() + block1Dim - 1) / block1Dim, (width + block1Dim - 1) / block1Dim);
 	dim3 blockDim(block1Dim, block1Dim);
 
-	get_matrix_squared_kernel KERNEL_ARGS2(gridDim, blockDim) (A.c_ptr(), A.M(), A.N(), ans.c_ptr(), lookup_tbl.get());
+	get_matrix_squared_kernel KERNEL_ARGS2(gridDim, blockDim) (A.c_ptr(), A.M(), A.N(), ans.c_ptr(), lookup_table.get());
 
 	checkCudaError<cublas_matrix_operation_error>(cudaGetLastError());
 	checkCudaError<cublas_matrix_operation_error>(cudaDeviceSynchronize());
 
 	return ans;
 }
+
+std::shared_ptr<size_t>
+linear_algebra::get_lookup_table(size_t N) const
+{
+	std::unique_ptr<size_t[]> host_lookup = std::make_unique<size_t[]>(N);
+	std::shared_ptr<size_t> device_lookup = allocate_on_device<size_t>(sizeof(size_t) * N);
+
+	size_t* host_ptr = host_lookup.get();
+	host_ptr[0] = N - 1;
+	for (int i = N - 2; i >= 0; --i)
+	{
+		host_ptr[N - i - 1] = (size_t)(i + 1) + host_ptr[N - i - 2];
+	}
+
+	checkCudaError<cuda_memory_error>(
+		cudaMemcpy(
+			device_lookup.get(),
+			host_lookup.get(),
+			sizeof(size_t) * N,
+			cudaMemcpyHostToDevice));
+
+	return device_lookup;
+}
+
 
 cuda_gpu_matrix
 linear_algebra::tikhonov(const cuda_gpu_matrix& A, const cuda_gpu_matrix& b, double k) const

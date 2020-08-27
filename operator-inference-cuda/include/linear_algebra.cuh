@@ -168,6 +168,7 @@ public:
 	void column_normalize(cuda_gpu_matrix& A, const cuda_gpu_matrix& scaling) const;
 
 private:
+	std::shared_ptr<size_t> get_lookup_table(size_t N) const;
 	const cuda_libraries& cudalibraries;
 };
 
