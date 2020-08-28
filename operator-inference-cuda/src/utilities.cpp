@@ -11,6 +11,7 @@ void print_mat(const double* arr, int M, int N)
 	}
 
 	cout << "Printing matrix of dimensions " << M << " x " << N << endl;
+	cout << std::setprecision(std::numeric_limits<double>::max_digits10);
 	for (int r = 0; r < M; ++r)
 	{
 		for (int c = 0; c < N; ++c)

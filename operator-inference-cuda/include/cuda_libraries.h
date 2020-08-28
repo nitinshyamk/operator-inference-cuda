@@ -9,7 +9,6 @@
 #include <cuda_runtime_api.h>
 #include <iostream>
 #include <stdexcept>
-
 #include "utilities.h"
 
 
@@ -53,22 +52,22 @@ public:
 
 	cuda_libraries(const cuda_libraries& cpy) = delete;
 
-	const cublasHandle_t get_blas_handle() const
+	cublasHandle_t get_blas_handle() const
 	{
 		return blas_handle;
 	}
 
-	const cublasLtHandle_t get_blaslt_handle() const
+	cublasLtHandle_t get_blaslt_handle() const
 	{
 		return blaslt_handle;
 	}
 
-	const cusparseHandle_t get_sparse_handle() const
+	cusparseHandle_t get_sparse_handle() const
 	{
 		return sparse_handle;
 	}
 
-	const cusolverDnHandle_t get_solver_handle() const
+	cusolverDnHandle_t get_solver_handle() const
 	{
 		return solver_handle;
 	}

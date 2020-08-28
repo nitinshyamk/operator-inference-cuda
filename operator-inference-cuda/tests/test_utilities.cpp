@@ -10,7 +10,13 @@ test_utilities::is_approx_equal(cuda_host_matrix& A, cuda_host_matrix& B, double
 		for (size_t c = 0; c < A.N(); ++c)
 		{
 			if (abs(A[r][c] - B[r][c]) > epsilon)
+			{
+				std::cout << abs(A[r][c] - B[r][c]);
+				A.print();
+				B.print();
+				std::cout << r << ", " << c << std::endl;
 				return false;
+			}
 		}
 	}
 	return true;
@@ -54,6 +60,7 @@ void test_utilities::write_matrix_to_file(cuda_host_matrix& A, std::string fname
 {
 	std::ofstream file(fname);
 	file << A.M() << " " << A.N() << "\n";
+	file << std::setprecision(std::numeric_limits< double >::max_digits10);
 
 	for (size_t r = 0; r < A.M(); ++r)
 	{
@@ -72,6 +79,11 @@ test_utilities::get_baselines_directory()
 	return std::string(SOURCE_CODE_DIR) + "/tests/baselines";
 }
 
+std::string
+test_utilities::get_inputs_directory()
+{
+	return std::string(SOURCE_CODE_DIR) + "/tests/inputs";
+}
 
 bool
 test_utilities::check_baseline(cuda_host_matrix& A, std::string fname)

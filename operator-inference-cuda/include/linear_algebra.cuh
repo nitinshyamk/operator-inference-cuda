@@ -60,7 +60,7 @@ public:
 		bool transposeB) const;
 
 	/// <summary>
-	/// Returns a new vector y = alpha * a + beta * b
+	/// Computes the vector y = alpha * a + beta * b
 	/// </summary>
 	cuda_gpu_vector add(
 		const cuda_gpu_vector& a,

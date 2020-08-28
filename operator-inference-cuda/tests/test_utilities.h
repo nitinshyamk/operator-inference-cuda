@@ -5,9 +5,11 @@
 #include "../include/cuda_host_matrix.h"
 #include "../TestingConfig.h"
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <sys/stat.h>
 #include <string>
+
 
 class test_utilities
 {
@@ -57,10 +59,15 @@ public:
 	static bool file_exists(const std::string& fname);
 
 	/// <summary>
-	/// Gets the default testing directory for baselines. Relies on CMAKE build system
+	/// Gets the default directory for test baselines. Relies on CMAKE build system integration
 	/// </summary>
 	/// <returns></returns>
 	static std::string get_baselines_directory();
+
+	/// <summary>
+	/// Gets the default directory for test inputs. Relies on CMAKE build system integration
+	/// </summary>
+	static std::string get_inputs_directory();
 
 	/// <summary>
 	/// Compare A against the baseline (using the appropriate implementation of is_approx_equal)

@@ -13,7 +13,7 @@ include(CTest)
 file(GLOB OPINF_LIB_HEADERS include/*.h include/*.cuh)
 file(GLOB OPINF_LIB_SRC src/*.cpp src/*.cu)
 
-set(CUDA_LIBRARIES cudart_static cudadevrt cublas cublasLt cusolver cusparse)
+set(CUDA_LIBRARIES cudart_static cudadevrt cublas cublasLt curand cusolver cusparse)
 
 add_library(opinf_cuda_lib STATIC ${OPINF_LIB_HEADERS} ${OPINF_LIB_SRC})
 target_include_directories(opinf_cuda_lib PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})

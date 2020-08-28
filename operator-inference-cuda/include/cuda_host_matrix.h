@@ -25,8 +25,12 @@ public:
 		CM_SPARSE,
 		CM_DENSE
 	};
-	cuda_host_matrix() : _m(0), _n(0), data() {}
 
+	/// <summary>
+	/// Default constructor creates placeholder
+	/// </summary>
+	/// <returns></returns>
+	cuda_host_matrix() : _m(0), _n(0), data() {}
 
 	// Construct empty matrix
 	cuda_host_matrix(size_t m, size_t n, MatrixType matrixType = MatrixType::CM_DENSE);
@@ -70,7 +74,7 @@ public:
 	inline size_t N() const { return this->_n; }
 
 
-private:
+protected:
 	std::shared_ptr<double> data;
 	size_t _m;
 	size_t _n;

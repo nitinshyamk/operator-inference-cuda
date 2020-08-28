@@ -4,13 +4,14 @@
 #include "../include/cuda_host_matrix.h"
 #include "../include/cuda_gpu_matrix.h"
 #include "../include/cuda_libraries.h"
+#include "../include/cuda_random.h"
 #include "../include/linear_algebra.cuh"
 
 
 class linear_algebra_test : public ::testing::Test
 {
 public:
-	linear_algebra_test() : _cudaLibraries(), _linalg(_cudaLibraries) {}
+	linear_algebra_test() : _cudaLibraries(), _linalg(_cudaLibraries), _cuda_random(_cudaLibraries) {}
 	~linear_algebra_test() {}
 
 	virtual void SetUp()
@@ -105,9 +106,12 @@ public:
 	cuda_host_matrix matrix2;
 	cuda_host_matrix matrix3;
 	cuda_host_matrix matrix4;
+	cuda_gpu_vector gpuVec1;
+	cuda_gpu_vector gpuVec2;
 
 	cuda_libraries _cudaLibraries;
 	linear_algebra _linalg;
+	cuda_random _cuda_random;
 };
 
 
@@ -327,4 +331,42 @@ TEST_F(linear_algebra_test, column_normalize)
 	auto m3maxes = _linalg.find_column_abs_maxes(m3gpu);
 	_linalg.column_normalize(m3gpu, m3maxes);
 	ASSERT_TRUE(test_utilities::check_baseline(create_host_matrix_from_gpu(m3gpu), base_fname + "_2.txt"));
+}
+
+TEST_F(linear_algebra_test, add_vectors)
+{
+	std::string test_name = ::testing::UnitTest::GetInstance()->current_test_info()->name();
+	std::string base_input = test_utilities::get_inputs_directory() + "/" + test_name;
+	std::string base_baseline = test_utilities::get_baselines_directory() + "/" + test_name;
+
+	cuda_host_vector v1 = test_utilities::read_matrix_from_file(base_input + "_1_1.txt");
+	cuda_host_vector v2 = test_utilities::read_matrix_from_file(base_input + "_1_2.txt");
+	auto v1gpu = create_gpu_matrix_from_host(v1);
+	auto v2gpu = create_gpu_matrix_from_host(v2);
+
+	auto ans1 = _linalg.add(v1gpu, 0, v2gpu, 0);
+	ASSERT_MATRIX_ZERO(create_host_matrix_from_gpu(ans1));
+
+	auto ans2 = _linalg.add(v1gpu, 0, v2gpu, 1);
+	ASSERT_TRUE(test_utilities::is_approx_equal(v2, create_host_matrix_from_gpu(ans2)));
+
+	auto ans3 = _linalg.add(v1gpu, 1, v2gpu, 0);
+	ASSERT_TRUE(test_utilities::is_approx_equal(v1, create_host_matrix_from_gpu(ans3)));
+
+	auto ans4 = _linalg.add(v1gpu, 1, v2gpu, 1);
+	ASSERT_TRUE(test_utilities::check_baseline(create_host_matrix_from_gpu(ans4), base_baseline + "_4.txt"));
+
+	auto ans5 = _linalg.add(v1gpu, 3, v2gpu, -0.4);
+	ASSERT_TRUE(test_utilities::check_baseline(create_host_matrix_from_gpu(ans5), base_baseline + "_5.txt"));
+}
+
+TEST_F(linear_algebra_test, multiply_matrices)
+{
+	auto m1gpu = create_gpu_matrix_from_host(matrix1);
+	using std::make_pair;
+	auto m1subset = _linalg.subset(m1gpu, make_pair(0, 9), make_pair(0, 9));
+	auto ans = _linalg.multiply(m1gpu, true, m1gpu, false);
+	matrix1.print();
+	auto anshost = create_host_matrix_from_gpu(ans);
+	anshost.print();
 }

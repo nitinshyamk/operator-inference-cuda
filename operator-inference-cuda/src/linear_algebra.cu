@@ -31,39 +31,30 @@ linear_algebra::multiply(
 
 	cuda_gpu_matrix C(A_M, B_N);
 
+	// Configure matrix operation description
 	cublasLtMatmulDesc_t op_description = NULL;
 	checkCudaStatus<cublas_matrix_operation_error>(
 		cublasLtMatmulDescCreate(&op_description, CUBLAS_COMPUTE_64F, CUDA_R_64F));
-	cublasOperation_t shouldTransposeValue = CUBLAS_OP_T;
-
-	auto setTransposeAttribute = [&op_description, &shouldTransposeValue](cublasLtMatmulDescAttributes_t attr) -> void
-	{
-		checkCudaStatus<cublas_matrix_operation_error>(
-			cublasLtMatmulDescSetAttribute(
-				op_description,
-				attr,
-				&shouldTransposeValue,
-				sizeof(shouldTransposeValue)));
-	};
-
-	if (transposeA)
-		setTransposeAttribute(CUBLASLT_MATMUL_DESC_TRANSA);
-
-	if (transposeB)
-		setTransposeAttribute(CUBLASLT_MATMUL_DESC_TRANSB);
-
-	// create descriptions
-	cublasLtMatrixLayout_t Adescription, Bdescription, Cdescription;
+	cublasOperation_t opAvalue = transposeA ? CUBLAS_OP_T : CUBLAS_OP_N;
+	cublasOperation_t opBvalue = transposeB ? CUBLAS_OP_T : CUBLAS_OP_N;
 	checkCudaStatus<cublas_matrix_operation_error>(
-		cublasLtMatrixLayoutCreate(&Adescription, CUDA_R_64F, A_M, A_N, A_M));
+		cublasLtMatmulDescSetAttribute(op_description, CUBLASLT_MATMUL_DESC_TRANSA, &opAvalue, sizeof(opAvalue)));
 	checkCudaStatus<cublas_matrix_operation_error>(
-		cublasLtMatrixLayoutCreate(&Bdescription, CUDA_R_64F, B_M, B_N, B_M));
+		cublasLtMatmulDescSetAttribute(op_description, CUBLASLT_MATMUL_DESC_TRANSB, &opBvalue, sizeof(opBvalue)));
+
+	// Create matrix descriptions
+	cublasLtMatrixLayout_t Adescription = {}, Bdescription = {}, Cdescription = {};
+	checkCudaStatus<cublas_matrix_operation_error>(
+		cublasLtMatrixLayoutCreate(&Adescription, CUDA_R_64F, A_M, A_N, A.M()));
+	checkCudaStatus<cublas_matrix_operation_error>(
+		cublasLtMatrixLayoutCreate(&Bdescription, CUDA_R_64F, B_M, B_N, B.M()));
 	checkCudaStatus<cublas_matrix_operation_error>(
 		cublasLtMatrixLayoutCreate(&Cdescription, CUDA_R_64F, C.M(), C.N(), C.M()));
 
 	size_t workspace_size = 1 << 16;
 	std::shared_ptr<void> workspace = allocate_on_device<void>(workspace_size);
 
+	// Configure matrix preferences
 	cublasLtMatmulPreference_t preference = NULL;
 	checkCudaStatus<cublas_matrix_operation_error>(
 		cublasLtMatmulPreferenceCreate(&preference));
@@ -74,7 +65,10 @@ linear_algebra::multiply(
 			&workspace_size,
 			sizeof(workspace_size)));
 
-	cublasLtMatmulHeuristicResult_t heuristicResult = {};
+
+	size_t numAlgosToTry = 32;
+	auto heuristicResults = std::make_unique<cublasLtMatmulHeuristicResult_t[]>(numAlgosToTry);
+
 	int returnedResults = 0;
 	cublasLtMatmulAlgoGetHeuristic(
 		cudalibraries.get_blaslt_handle(),
@@ -84,9 +78,14 @@ linear_algebra::multiply(
 		Cdescription,
 		Cdescription,
 		preference,
-		1,
-		&heuristicResult,
+		numAlgosToTry,
+		heuristicResults.get(),
 		&returnedResults);
+
+	if (returnedResults == 0)
+	{
+		throw std::invalid_argument("One or more matrices is not properly aligned. Unable to find supported CUDA algorithm for multiplication");
+	}
 
 	double alpha = 1, beta = 0;
 	cublasLtMatmul(
@@ -103,7 +102,7 @@ linear_algebra::multiply(
 		Cdescription,
 		C.c_ptr(),
 		Cdescription,
-		&heuristicResult.algo,
+		&heuristicResults[0].algo,
 		workspace.get(),
 		workspace_size,
 		0); // default cudastream
