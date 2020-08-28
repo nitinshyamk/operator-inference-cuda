@@ -32,80 +32,21 @@ linear_algebra::multiply(
 	cuda_gpu_matrix C(A_M, B_N);
 
 	// Configure matrix operation description
-	cublasLtMatmulDesc_t op_description = NULL;
-	checkCudaStatus<cublas_matrix_operation_error>(
-		cublasLtMatmulDescCreate(&op_description, CUBLAS_COMPUTE_64F, CUDA_R_64F));
 	cublasOperation_t opAvalue = transposeA ? CUBLAS_OP_T : CUBLAS_OP_N;
 	cublasOperation_t opBvalue = transposeB ? CUBLAS_OP_T : CUBLAS_OP_N;
-	checkCudaStatus<cublas_matrix_operation_error>(
-		cublasLtMatmulDescSetAttribute(op_description, CUBLASLT_MATMUL_DESC_TRANSA, &opAvalue, sizeof(opAvalue)));
-	checkCudaStatus<cublas_matrix_operation_error>(
-		cublasLtMatmulDescSetAttribute(op_description, CUBLASLT_MATMUL_DESC_TRANSB, &opBvalue, sizeof(opBvalue)));
-
-	// Create matrix descriptions
-	cublasLtMatrixLayout_t Adescription = {}, Bdescription = {}, Cdescription = {};
-	checkCudaStatus<cublas_matrix_operation_error>(
-		cublasLtMatrixLayoutCreate(&Adescription, CUDA_R_64F, A_M, A_N, A.M()));
-	checkCudaStatus<cublas_matrix_operation_error>(
-		cublasLtMatrixLayoutCreate(&Bdescription, CUDA_R_64F, B_M, B_N, B.M()));
-	checkCudaStatus<cublas_matrix_operation_error>(
-		cublasLtMatrixLayoutCreate(&Cdescription, CUDA_R_64F, C.M(), C.N(), C.M()));
-
-	size_t workspace_size = 1 << 16;
-	std::shared_ptr<void> workspace = allocate_on_device<void>(workspace_size);
-
-	// Configure matrix preferences
-	cublasLtMatmulPreference_t preference = NULL;
-	checkCudaStatus<cublas_matrix_operation_error>(
-		cublasLtMatmulPreferenceCreate(&preference));
-	checkCudaStatus<cublas_matrix_operation_error>(
-		cublasLtMatmulPreferenceSetAttribute(
-			preference,
-			CUBLASLT_MATMUL_PREF_MAX_WORKSPACE_BYTES,
-			&workspace_size,
-			sizeof(workspace_size)));
-
-
-	size_t numAlgosToTry = 32;
-	auto heuristicResults = std::make_unique<cublasLtMatmulHeuristicResult_t[]>(numAlgosToTry);
-
-	int returnedResults = 0;
-	cublasLtMatmulAlgoGetHeuristic(
-		cudalibraries.get_blaslt_handle(),
-		op_description,
-		Adescription,
-		Bdescription,
-		Cdescription,
-		Cdescription,
-		preference,
-		numAlgosToTry,
-		heuristicResults.get(),
-		&returnedResults);
-
-	if (returnedResults == 0)
-	{
-		throw std::invalid_argument("One or more matrices is not properly aligned. Unable to find supported CUDA algorithm for multiplication");
-	}
-
 	double alpha = 1, beta = 0;
-	cublasLtMatmul(
-		cudalibraries.get_blaslt_handle(),
-		op_description,
+
+	cublasDgemm(cudalibraries.get_blas_handle(),
+		opAvalue, opBvalue,
+		A_M, B_N, A_N,
 		&alpha,
 		A.c_ptr(),
-		Adescription,
+		A.M(),
 		B.c_ptr(),
-		Bdescription,
+		B.M(),
 		&beta,
-		// currently C must equal D, so we just pass it in twice
 		C.c_ptr(),
-		Cdescription,
-		C.c_ptr(),
-		Cdescription,
-		&heuristicResults[0].algo,
-		workspace.get(),
-		workspace_size,
-		0); // default cudastream
+		C.M());
 
 	checkCudaError<cublas_matrix_operation_error>(cudaDeviceSynchronize());
 	return C;
@@ -190,6 +131,7 @@ linear_algebra::svd_decomposition(const cuda_gpu_matrix& A) const
 	signed char jobu = 'A', jobvt = 'A';
 
 	size_t diag_length = A.M() < A.N() ? A.M() : A.N();
+
 	cuda_gpu_matrix U(A.M(), A.M());
 	cuda_gpu_vector Svec(diag_length);
 	cuda_gpu_vector unconverged(diag_length);
@@ -208,9 +150,9 @@ linear_algebra::svd_decomposition(const cuda_gpu_matrix& A) const
 		A.M(),
 		Svec.c_ptr(),
 		U.c_ptr(),
-		A.M(),  // ldu
+		U.M(),  // ldu
 		Vt.c_ptr(),
-		A.N(), // ldvt,
+		Vt.M(), // ldvt,
 		workspace.get(),
 		lwork,
 		unconverged.c_ptr(),

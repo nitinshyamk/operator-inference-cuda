@@ -114,7 +114,6 @@ public:
 	cuda_random _cuda_random;
 };
 
-
 TEST_F(linear_algebra_test, cuda_matrices_initialized_to_all_zeroes)
 {
 	ASSERT_MATRIX_ZERO(allZeroesMat);
@@ -213,7 +212,6 @@ TEST_F(linear_algebra_test, linear_algebra_ones)
 		ASSERT_DOUBLE_EQ(ans[r][0], 1.0);
 	}
 }
-
 
 TEST_F(linear_algebra_test, linear_algebra_find_column_maxes)
 {
@@ -362,11 +360,32 @@ TEST_F(linear_algebra_test, add_vectors)
 
 TEST_F(linear_algebra_test, multiply_matrices)
 {
+	std::string test_name = ::testing::UnitTest::GetInstance()->current_test_info()->name();
+	std::string base_baseline = test_utilities::get_baselines_directory() + "/" + test_name;
+	std::string base_input = test_utilities::get_inputs_directory() + "/" + test_name;
+
 	auto m1gpu = create_gpu_matrix_from_host(matrix1);
-	using std::make_pair;
-	auto m1subset = _linalg.subset(m1gpu, make_pair(0, 9), make_pair(0, 9));
 	auto ans = _linalg.multiply(m1gpu, true, m1gpu, false);
-	matrix1.print();
 	auto anshost = create_host_matrix_from_gpu(ans);
-	anshost.print();
+	ASSERT_TRUE(test_utilities::check_baseline(anshost, base_baseline + "_1.txt"));
+
+	auto m1 = create_gpu_matrix_from_host(test_utilities::read_matrix_from_file(base_input + "_1.txt"));
+	auto m2 = create_gpu_matrix_from_host(test_utilities::read_matrix_from_file(base_input + "_2.txt"));
+
+	auto ans2 = _linalg.multiply(m1, false, m2, false);
+	auto ans2host = create_host_matrix_from_gpu(ans2);
+	auto ans3host = create_host_matrix_from_gpu(_linalg.multiply(m2, true, m1, true));
+	ASSERT_TRUE(test_utilities::check_baseline(ans2host, base_baseline + "_2.txt"));
+	ASSERT_TRUE(test_utilities::check_baseline(ans3host, base_baseline + "_3.txt"));
+
+	ASSERT_THROW(_linalg.multiply(m1, false, m2, true), incompatible_dimensions_error);
+	ASSERT_THROW(_linalg.multiply(m1, true, m2, true), incompatible_dimensions_error);
+	ASSERT_THROW(_linalg.multiply(m2, false, m1, true), incompatible_dimensions_error);
+	ASSERT_THROW(_linalg.multiply(m1, false, m2, true), std::invalid_argument);
+	ASSERT_THROW(_linalg.multiply(m1, true, m2, true), std::invalid_argument);
+	ASSERT_THROW(_linalg.multiply(m2, false, m1, true), std::invalid_argument);
+}
+
+TEST_F(linear_algebra_test, singular_value_decomposition)
+{
 }

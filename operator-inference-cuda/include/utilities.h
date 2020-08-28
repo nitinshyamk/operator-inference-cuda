@@ -134,11 +134,11 @@ public:
 	}
 };
 
-class incompatible_dimensions_error : public std::runtime_error
+class incompatible_dimensions_error : public std::invalid_argument
 {
 public:
 	incompatible_dimensions_error(int Am, int An, int Bm, int Bn) :
-		runtime_error(helper_format(Am, An, Bm, Bn)),
+		invalid_argument(helper_format(Am, An, Bm, Bn)),
 		_phrase(helper_format(Am, An, Bm, Bn)) {}
 
 	virtual const char* what() const throw()
